@@ -1,0 +1,17 @@
+# Compiler files
+cache/
+out/
+
+# Dependencies
+node_modules/
+
+# Foundry
+foundry.lock
+broadcast/
+
+# Dotenv
+.env
+.env.local
+
+# OS files
+.DS_Store
