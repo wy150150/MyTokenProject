@@ -1,0 +1,14 @@
+No files changed, compilation skipped
+
+Ran 3 tests for test/Bank.t.sol:BankTest
+[PASS] testDepositBalance() (gas: 74509)
+[PASS] testTop3Depositors() (gas: 265178)
+[PASS] testWithdrawPermission() (gas: 90092)
+Suite result: ok. 3 passed; 0 failed; 0 skipped; finished in 10.81ms (5.13ms CPU time)
+
+Ran 2 tests for test/Counter.t.sol:CounterTest
+[PASS] testFuzz_SetNumber(uint256) (runs: 256, μ: 28667, ~: 29289)
+[PASS] test_Increment() (gas: 28784)
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 17.52ms (10.90ms CPU time)
+
+Ran 2 test suites in 5.20s (28.32ms CPU time): 5 tests passed, 0 failed, 0 skipped (5 total tests)
