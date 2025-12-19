@@ -1,32 +1,30 @@
-Compiling 1 files with Solc 0.8.25
-Solc 0.8.25 finished in 353.03ms
-Compiler run successful!
+No files changed, compilation skipped
 
 Ran 11 tests for test/NFTMarket.t.sol:NFTMarketTest
-[PASS] invariant_MarketHasNoTokens() (runs: 256, calls: 128000, reverts: 93391)
+[PASS] invariant_MarketHasNoTokens() (runs: 256, calls: 128000, reverts: 93360)
 
 ╭-----------+-------------------+-------+---------+----------╮
 | Contract  | Selector          | Calls | Reverts | Discards |
 +============================================================+
-| MyToken   | approve           | 11505 | 24      | 0        |
+| MyToken   | approve           | 11392 | 24      | 0        |
 |-----------+-------------------+-------+---------+----------|
-| MyToken   | transfer          | 11606 | 11441   | 0        |
+| MyToken   | transfer          | 11395 | 11226   | 0        |
 |-----------+-------------------+-------+---------+----------|
-| MyToken   | transferFrom      | 11868 | 11708   | 0        |
+| MyToken   | transferFrom      | 11573 | 11443   | 0        |
 |-----------+-------------------+-------+---------+----------|
-| NFTMarket | buy               | 11668 | 11668   | 0        |
+| NFTMarket | buy               | 11598 | 11598   | 0        |
 |-----------+-------------------+-------+---------+----------|
-| NFTMarket | list              | 11630 | 11630   | 0        |
+| NFTMarket | list              | 11713 | 11713   | 0        |
 |-----------+-------------------+-------+---------+----------|
-| MyNFT     | approve           | 11607 | 11607   | 0        |
+| MyNFT     | approve           | 11960 | 11960   | 0        |
 |-----------+-------------------+-------+---------+----------|
-| MyNFT     | mint              | 11612 | 295     | 0        |
+| MyNFT     | mint              | 11805 | 299     | 0        |
 |-----------+-------------------+-------+---------+----------|
-| MyNFT     | safeTransferFrom  | 23468 | 23468   | 0        |
+| MyNFT     | safeTransferFrom  | 23371 | 23371   | 0        |
 |-----------+-------------------+-------+---------+----------|
-| MyNFT     | setApprovalForAll | 11509 | 23      | 0        |
+| MyNFT     | setApprovalForAll | 11479 | 12      | 0        |
 |-----------+-------------------+-------+---------+----------|
-| MyNFT     | transferFrom      | 11527 | 11527   | 0        |
+| MyNFT     | transferFrom      | 11714 | 11714   | 0        |
 ╰-----------+-------------------+-------+---------+----------╯
 
 [PASS] testBuyErrorDuplicate() (gas: 140456)
@@ -35,10 +33,10 @@ Ran 11 tests for test/NFTMarket.t.sol:NFTMarketTest
 [PASS] testBuyErrorPriceLow() (gas: 97954)
 [PASS] testBuyErrorSelfBuy() (gas: 95801)
 [PASS] testBuySuccess() (gas: 150616)
-[PASS] testFuzzListAndBuy(uint256,address) (runs: 256, μ: 205160, ~: 205340)
+[PASS] testFuzzListAndBuy(uint256,address) (runs: 256, μ: 205139, ~: 205331)
 [PASS] testListErrorNotOwner() (gas: 23020)
 [PASS] testListErrorPriceZero() (gas: 16917)
 [PASS] testListSuccess() (gas: 99620)
-Suite result: ok. 11 passed; 0 failed; 0 skipped; finished in 1.81s (1.85s CPU time)
+Suite result: ok. 11 passed; 0 failed; 0 skipped; finished in 1.86s (1.94s CPU time)
 
-Ran 1 test suite in 4.62s (1.81s CPU time): 11 tests passed, 0 failed, 0 skipped (11 total tests)
+Ran 1 test suite in 4.66s (1.86s CPU time): 11 tests passed, 0 failed, 0 skipped (11 total tests)
