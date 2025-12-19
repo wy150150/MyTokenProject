@@ -3,148 +3,178 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import "../src/NFTMarket.sol";
-import "../src/MyNFT.sol";
 import "../src/MyToken.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+
+contract MyNFT is ERC721 {
+    constructor() ERC721("MyNFT", "MNFT") {}
+    function mint(address to, uint256 tokenId) external {
+        _mint(to, tokenId);
+    }
+}
 
 contract NFTMarketTest is Test {
     NFTMarket public market;
-    MyNFT public nft;
     MyToken public token;
+    MyNFT public nft;
 
-    address public seller = address(0x11);
-    address public buyer = address(0x22);
+    address public seller = address(1);
+    address public buyer = address(2);
+    uint256 public constant TOKEN_ID = 1;
+    uint256 public constant INITIAL_PRICE = 100 * 1e18;
+
+    event Listed(address indexed nft, uint256 indexed tokenId, address seller, address token, uint256 price);
+    event Bought(address indexed nft, uint256 indexed tokenId, address buyer, uint256 price);
 
     function setUp() public {
         market = new NFTMarket();
+        token = new MyToken("Test Token", "TTK");
         nft = new MyNFT();
-        token = new MyToken("MockToken", "MTK");
 
-        // 分发初始代币和 NFT
-        token.transfer(buyer, 1000000 ether);
+        // Setup seller with an NFT
+        nft.mint(seller, TOKEN_ID);
+        
+        // Setup buyer with tokens
+        token.transfer(buyer, 1000000 * 1e18);
+        
+        // Approve market to spend tokens for buyer
+        vm.prank(buyer);
+        token.approve(address(market), type(uint256).max);
+        
+        // Approve market to transfer NFT for seller (safeTransferFrom requires approval from owner)
         vm.prank(seller);
-        nft.mint(); // ID 0
+        nft.setApprovalForAll(address(market), true);
     }
 
-    // --- 上架测试 ---
+    // --- Listing Tests ---
 
     function testListSuccess() public {
-        vm.startPrank(seller);
-        nft.approve(address(market), 0);
-        
-        vm.expectEmit(true, true, true, true);
-        emit NFTMarket.Listed(seller, address(nft), 0, address(token), 100 ether);
-        
-        market.list(address(nft), 0, address(token), 100 ether);
-        vm.stopPrank();
-
-        (address s, address t, uint256 p) = market.listings(address(nft), 0);
-        assertEq(s, seller);
-        assertEq(t, address(token));
-        assertEq(p, 100 ether);
-    }
-
-    function testListNotOwnerFail() public {
-        vm.prank(buyer);
-        vm.expectRevert("Not the owner");
-        market.list(address(nft), 0, address(token), 100 ether);
-    }
-
-    function testListNoApprovalFail() public {
         vm.prank(seller);
-        vm.expectRevert("Not approved");
-        market.list(address(nft), 0, address(token), 100 ether);
+        vm.expectEmit(true, true, false, true);
+        emit Listed(address(nft), TOKEN_ID, seller, address(token), INITIAL_PRICE);
+        
+        market.list(address(nft), TOKEN_ID, address(token), INITIAL_PRICE);
+
+        (address listedSeller, address listedToken, uint256 listedPrice) = market.listings(address(nft), TOKEN_ID);
+        assertEq(listedSeller, seller);
+        assertEq(listedToken, address(token));
+        assertEq(listedPrice, INITIAL_PRICE);
     }
 
-    // --- 购买测试 ---
+    function testListErrorNotOwner() public {
+        vm.prank(buyer);
+        vm.expectRevert(NFTMarket.NotOwner.selector);
+        market.list(address(nft), TOKEN_ID, address(token), INITIAL_PRICE);
+    }
+
+    function testListErrorPriceZero() public {
+        vm.prank(seller);
+        vm.expectRevert(NFTMarket.PriceMustBeGreaterThanZero.selector);
+        market.list(address(nft), TOKEN_ID, address(token), 0);
+    }
+
+    // --- Buying Tests ---
 
     function testBuySuccess() public {
-        // Seller 上架
-        vm.startPrank(seller);
-        nft.approve(address(market), 0);
-        market.list(address(nft), 0, address(token), 100 ether);
-        vm.stopPrank();
+        vm.prank(seller);
+        market.list(address(nft), TOKEN_ID, address(token), INITIAL_PRICE);
 
-        // Buyer 购买
-        vm.startPrank(buyer);
-        token.approve(address(market), 100 ether);
-        
-        vm.expectEmit(true, true, true, true);
-        emit NFTMarket.Purchased(buyer, address(nft), 0, address(token), 100 ether);
-        
         uint256 sellerBalanceBefore = token.balanceOf(seller);
-        market.buy(address(nft), 0);
-        vm.stopPrank();
+        uint256 buyerBalanceBefore = token.balanceOf(buyer);
 
-        assertEq(nft.ownerOf(0), buyer);
-        assertEq(token.balanceOf(seller), sellerBalanceBefore + 100 ether);
+        vm.prank(buyer);
+        vm.expectEmit(true, true, false, true);
+        emit Bought(address(nft), TOKEN_ID, buyer, INITIAL_PRICE);
+        
+        market.buy(address(nft), TOKEN_ID, INITIAL_PRICE);
+
+        assertEq(nft.ownerOf(TOKEN_ID), buyer);
+        assertEq(token.balanceOf(seller), sellerBalanceBefore + INITIAL_PRICE);
+        assertEq(token.balanceOf(buyer), buyerBalanceBefore - INITIAL_PRICE);
+        
+        // Check mapping wiped
+        (address listedSeller, , ) = market.listings(address(nft), TOKEN_ID);
+        assertEq(listedSeller, address(0));
     }
 
-    function testBuySelfFail() public {
-        vm.startPrank(seller);
-        nft.approve(address(market), 0);
-        market.list(address(nft), 0, address(token), 100 ether);
-        
-        vm.expectRevert("Cannot buy your own NFT");
-        market.buy(address(nft), 0);
-        vm.stopPrank();
+    function testBuyErrorSelfBuy() public {
+        vm.prank(seller);
+        market.list(address(nft), TOKEN_ID, address(token), INITIAL_PRICE);
+
+        vm.prank(seller);
+        vm.expectRevert(NFTMarket.CannotBuyOwnNFT.selector);
+        market.buy(address(nft), TOKEN_ID, INITIAL_PRICE);
     }
 
-    function testDoubleBuyFail() public {
-        vm.startPrank(seller);
-        nft.approve(address(market), 0);
-        market.list(address(nft), 0, address(token), 100 ether);
-        vm.stopPrank();
-
-        vm.startPrank(buyer);
-        token.approve(address(market), 200 ether);
-        market.buy(address(nft), 0);
-        
-        vm.expectRevert("NFT not listed");
-        market.buy(address(nft), 0);
-        vm.stopPrank();
+    function testBuyErrorNotListed() public {
+        vm.prank(buyer);
+        vm.expectRevert(NFTMarket.NotListed.selector);
+        market.buy(address(nft), TOKEN_ID, INITIAL_PRICE);
     }
 
-    function testBuyPaymentTooLow() public {
-        vm.startPrank(seller);
-        nft.approve(address(market), 0);
-        market.list(address(nft), 0, address(token), 100 ether);
-        vm.stopPrank();
+    function testBuyErrorPriceLow() public {
+        vm.prank(seller);
+        market.list(address(nft), TOKEN_ID, address(token), INITIAL_PRICE);
 
-        vm.startPrank(buyer);
-        token.approve(address(market), 50 ether);
-        
-        // ERC20 transferFrom will revert due to insufficient allowance or balance
-        vm.expectRevert();
-        market.buy(address(nft), 0);
-        vm.stopPrank();
+        vm.prank(buyer);
+        vm.expectRevert(NFTMarket.PriceTooLow.selector);
+        market.buy(address(nft), TOKEN_ID, INITIAL_PRICE - 1);
     }
 
-    // --- 模糊测试 ---
+    function testBuyErrorPriceHigh() public {
+        vm.prank(seller);
+        market.list(address(nft), TOKEN_ID, address(token), INITIAL_PRICE);
 
-    /**
-     * @notice 模糊测试：随机价格上架并购买
-     * @param price 随机价格 0.01 - 10000 Token
-     * @param buyerAddr 随机购买地址
-     */
-    function testFuzzListingAndBuying(uint256 price, address buyerAddr) public {
-        // 限制价格区间 0.01 ~ 10000
-        vm.assume(price >= 0.01 ether && price <= 10000 ether);
-        // 排除非法地址和卖家自身
-        vm.assume(buyerAddr != address(0) && buyerAddr != seller && buyerAddr != address(market));
-        
-        // 准备环境
-        token.transfer(buyerAddr, price);
-        
-        vm.startPrank(seller);
-        nft.approve(address(market), 0);
-        market.list(address(nft), 0, address(token), price);
-        vm.stopPrank();
+        vm.prank(buyer);
+        vm.expectRevert(NFTMarket.PriceTooHigh.selector);
+        market.buy(address(nft), TOKEN_ID, INITIAL_PRICE + 1);
+    }
 
-        vm.startPrank(buyerAddr);
+    function testBuyErrorDuplicate() public {
+        vm.prank(seller);
+        market.list(address(nft), TOKEN_ID, address(token), INITIAL_PRICE);
+
+        vm.prank(buyer);
+        market.buy(address(nft), TOKEN_ID, INITIAL_PRICE);
+
+        // Try to buy again
+        vm.prank(buyer);
+        vm.expectRevert(NFTMarket.NotListed.selector);
+        market.buy(address(nft), TOKEN_ID, INITIAL_PRICE);
+    }
+
+    // --- Fuzz Testing ---
+
+    function testFuzzListAndBuy(uint256 price, address randomBuyer) public {
+        // Constraints
+        vm.assume(randomBuyer != seller && randomBuyer != address(0) && randomBuyer != address(market));
+        // 0.01 - 10000 Token (assuming 18 decimals)
+        price = bound(price, 0.01e18, 10000e18);
+
+        // Setup NFT
+        uint256 tokenId = 999;
+        nft.mint(seller, tokenId);
+        vm.prank(seller);
+        nft.setApprovalForAll(address(market), true);
+
+        // List
+        vm.prank(seller);
+        market.list(address(nft), tokenId, address(token), price);
+
+        // Setup buyer
+        token.transfer(randomBuyer, price);
+        vm.prank(randomBuyer);
         token.approve(address(market), price);
-        market.buy(address(nft), 0);
-        vm.stopPrank();
 
-        assertEq(nft.ownerOf(0), buyerAddr);
+        // Buy
+        vm.prank(randomBuyer);
+        market.buy(address(nft), tokenId, price);
+
+        assertEq(nft.ownerOf(tokenId), randomBuyer);
+    }
+    // --- Invariant Testing ---
+
+    function invariant_MarketHasNoTokens() public view {
+        assertEq(token.balanceOf(address(market)), 0);
     }
 }

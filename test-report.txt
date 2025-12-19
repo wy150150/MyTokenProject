@@ -1,40 +1,44 @@
 Compiling 1 files with Solc 0.8.25
-Solc 0.8.25 finished in 410.28ms
+Solc 0.8.25 finished in 353.03ms
 Compiler run successful!
 
-Ran 3 tests for test/Bank.t.sol:BankTest
-[PASS] testDepositBalance() (gas: 74509)
-[PASS] testTop3Depositors() (gas: 265178)
-[PASS] testWithdrawPermission() (gas: 90092)
-Suite result: ok. 3 passed; 0 failed; 0 skipped; finished in 9.16ms (2.80ms CPU time)
+Ran 11 tests for test/NFTMarket.t.sol:NFTMarketTest
+[PASS] invariant_MarketHasNoTokens() (runs: 256, calls: 128000, reverts: 93391)
 
-Ran 2 tests for test/Counter.t.sol:CounterTest
-[PASS] testFuzz_SetNumber(uint256) (runs: 256, μ: 28667, ~: 29289)
-[PASS] test_Increment() (gas: 28784)
-Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 14.73ms (7.42ms CPU time)
+╭-----------+-------------------+-------+---------+----------╮
+| Contract  | Selector          | Calls | Reverts | Discards |
++============================================================+
+| MyToken   | approve           | 11505 | 24      | 0        |
+|-----------+-------------------+-------+---------+----------|
+| MyToken   | transfer          | 11606 | 11441   | 0        |
+|-----------+-------------------+-------+---------+----------|
+| MyToken   | transferFrom      | 11868 | 11708   | 0        |
+|-----------+-------------------+-------+---------+----------|
+| NFTMarket | buy               | 11668 | 11668   | 0        |
+|-----------+-------------------+-------+---------+----------|
+| NFTMarket | list              | 11630 | 11630   | 0        |
+|-----------+-------------------+-------+---------+----------|
+| MyNFT     | approve           | 11607 | 11607   | 0        |
+|-----------+-------------------+-------+---------+----------|
+| MyNFT     | mint              | 11612 | 295     | 0        |
+|-----------+-------------------+-------+---------+----------|
+| MyNFT     | safeTransferFrom  | 23468 | 23468   | 0        |
+|-----------+-------------------+-------+---------+----------|
+| MyNFT     | setApprovalForAll | 11509 | 23      | 0        |
+|-----------+-------------------+-------+---------+----------|
+| MyNFT     | transferFrom      | 11527 | 11527   | 0        |
+╰-----------+-------------------+-------+---------+----------╯
 
-Ran 8 tests for test/NFTMarket.t.sol:NFTMarketTest
-[PASS] testBuyPaymentTooLow() (gas: 126392)
-[PASS] testBuySelfFail() (gas: 128500)
-[PASS] testBuySuccess() (gas: 189544)
-[PASS] testDoubleBuyFail() (gas: 184068)
-[PASS] testFuzzListingAndBuying(uint256,address) (runs: 256, μ: 203981, ~: 203993)
-[PASS] testListNoApprovalFail() (gas: 31763)
-[PASS] testListNotOwnerFail() (gas: 23674)
-[PASS] testListSuccess() (gas: 133093)
-Suite result: ok. 8 passed; 0 failed; 0 skipped; finished in 47.02ms (43.75ms CPU time)
+[PASS] testBuyErrorDuplicate() (gas: 140456)
+[PASS] testBuyErrorNotListed() (gas: 20916)
+[PASS] testBuyErrorPriceHigh() (gas: 98034)
+[PASS] testBuyErrorPriceLow() (gas: 97954)
+[PASS] testBuyErrorSelfBuy() (gas: 95801)
+[PASS] testBuySuccess() (gas: 150616)
+[PASS] testFuzzListAndBuy(uint256,address) (runs: 256, μ: 205160, ~: 205340)
+[PASS] testListErrorNotOwner() (gas: 23020)
+[PASS] testListErrorPriceZero() (gas: 16917)
+[PASS] testListSuccess() (gas: 99620)
+Suite result: ok. 11 passed; 0 failed; 0 skipped; finished in 1.81s (1.85s CPU time)
 
-Ran 1 test for test/NFTMarketInvariant.t.sol:NFTMarketInvariantTest
-[PASS] invariant_MarketTokenBalanceIsZero() (runs: 256, calls: 128000, reverts: 128000)
-
-╭-----------+----------+-------+---------+----------╮
-| Contract  | Selector | Calls | Reverts | Discards |
-+===================================================+
-| NFTMarket | buy      | 64164 | 64164   | 0        |
-|-----------+----------+-------+---------+----------|
-| NFTMarket | list     | 63836 | 63836   | 0        |
-╰-----------+----------+-------+---------+----------╯
-
-Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 1.22s (1.21s CPU time)
-
-Ran 4 test suites in 3.70s (1.29s CPU time): 14 tests passed, 0 failed, 0 skipped (14 total tests)
+Ran 1 test suite in 4.62s (1.81s CPU time): 11 tests passed, 0 failed, 0 skipped (11 total tests)

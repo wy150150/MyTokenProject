@@ -11,49 +11,49 @@ contract NFTMarket {
         uint256 price;
     }
 
-    // nftAddress => nftId => Listing
+    // nftAddress => tokenId => Listing
     mapping(address => mapping(uint256 => Listing)) public listings;
 
-    event Listed(address indexed seller, address indexed nftAddress, uint256 indexed nftId, address token, uint256 price);
-    event Purchased(address indexed buyer, address indexed nftAddress, uint256 indexed nftId, address token, uint256 price);
+    event Listed(address indexed nft, uint256 indexed tokenId, address seller, address token, uint256 price);
+    event Bought(address indexed nft, uint256 indexed tokenId, address buyer, uint256 price);
 
-    /**
-     * @notice 上架 NFT
-     * @param nftAddress NFT 合约地址
-     * @param nftId NFT ID
-     * @param token 支付所用的 ERC20 代币地址
-     * @param price 价格
-     */
-    function list(address nftAddress, uint256 nftId, address token, uint256 price) external {
-        require(price > 0, "Price must be greater than zero");
-        IERC721 nft = IERC721(nftAddress);
-        require(nft.ownerOf(nftId) == msg.sender, "Not the owner");
-        require(nft.isApprovedForAll(msg.sender, address(this)) || nft.getApproved(nftId) == address(this), "Not approved");
+    error NotListed();
+    error NotOwner();
+    error PriceMustBeGreaterThanZero();
+    error CannotBuyOwnNFT();
+    error PriceTooLow();
+    error PriceTooHigh();
 
-        listings[nftAddress][nftId] = Listing(msg.sender, token, price);
+    function list(address nft, uint256 tokenId, address token, uint256 price) external {
+        if (price == 0) revert PriceMustBeGreaterThanZero();
+        if (IERC721(nft).ownerOf(tokenId) != msg.sender) revert NotOwner();
+        
+        listings[nft][tokenId] = Listing({
+            seller: msg.sender,
+            token: token,
+            price: price
+        });
 
-        emit Listed(msg.sender, nftAddress, nftId, token, price);
+        emit Listed(nft, tokenId, msg.sender, token, price);
     }
 
-    /**
-     * @notice 购买 NFT
-     * @param nftAddress NFT 合约地址
-     * @param nftId NFT ID
-     */
-    function buy(address nftAddress, uint256 nftId) external {
-        Listing memory listing = listings[nftAddress][nftId];
-        require(listing.price > 0, "NFT not listed");
-        require(listing.seller != msg.sender, "Cannot buy your own NFT");
+    function buy(address nft, uint256 tokenId, uint256 amount) external {
+        Listing memory listing = listings[nft][tokenId];
+        if (listing.price == 0) revert NotListed();
+        if (listing.seller == msg.sender) revert CannotBuyOwnNFT();
+        if (amount < listing.price) revert PriceTooLow();
+        if (amount > listing.price) revert PriceTooHigh();
 
-        // 清除上架信息（防止重复购买）
-        delete listings[nftAddress][nftId];
+        delete listings[nft][tokenId];
 
-        // 支付代币
-        IERC20(listing.token).transferFrom(msg.sender, listing.seller, listing.price);
+        // Transfer tokens from buyer to seller
+        // Note: IERC20(listing.token).transferFrom will revert if balance or allowance is insufficient,
+        // but we'll also check the result just in case.
+        require(IERC20(listing.token).transferFrom(msg.sender, listing.seller, listing.price), "Transfer failed");
 
-        // 转移 NFT
-        IERC721(nftAddress).safeTransferFrom(listing.seller, msg.sender, nftId);
+        // Transfer NFT from seller to buyer
+        IERC721(nft).safeTransferFrom(listing.seller, msg.sender, tokenId);
 
-        emit Purchased(msg.sender, nftAddress, nftId, listing.token, listing.price);
+        emit Bought(nft, tokenId, msg.sender, listing.price);
     }
 }
