@@ -12,6 +12,7 @@ broadcast/
 # Dotenv
 .env
 .env.local
+.env.example
 
 # OS files
 .DS_Store
